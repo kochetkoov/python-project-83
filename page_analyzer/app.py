@@ -11,5 +11,5 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key') # Ус�
 def hello():
     return 'Hello, World!'
 
-if __name__ = '__main__':
+if __name__ == '__main__':
     app.run(debug=True)

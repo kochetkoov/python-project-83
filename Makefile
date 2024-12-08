@@ -1,9 +1,6 @@
 install:
 	poetry install --no-root
 
-build:
-	poetry build
-
 lint:
 	poetry run flake8
 

@@ -9,7 +9,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 @app.route('/')
-def home:
+def home():
     return 'Hello, World!'
 
 if __name__ == '__main__':

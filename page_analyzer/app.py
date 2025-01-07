@@ -11,8 +11,11 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-conn = psycopg2.connect('postgresql://janedoe:mypassword@localhost:5432/mydb')
-cur = conn.cursor()
+try:
+    conn = psycopg2.connect('postgresql://janedoe:mypassword@localhost:5432/mydb')
+    cur = conn.cursor()
+except:
+    print('Возникла ошибка при подключении')
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -23,11 +26,16 @@ def home():
         if len(url) > 255 or not is_valid_url(url):
             flash('URL должен быть валидным', 'error')
             return redirect('/')
-
-        cursor.execute('INSERT INTO urls (name) VALUES (%s) RETURNING id', (url,))
-        conn.commit()
-        flash('URL успешно добавлен', 'success')
-        return redirect('/urls')
+        try:
+            cur.execute("INSERT INTO urls (name) VALUES (%s)", (url,))
+            conn.commit()
+            flash('URL успешно добавлен', 'success')
+            return redirect('/urls')
+        except Exception as e:
+            flash(f'Ошибка при добавлении URL: {str(e)}', 'error')
+            print(f'Error: {str(e)}')
+            conn.rollback()
+            return redirect('/')
 
     return render_template('home.html')
 
@@ -37,8 +45,8 @@ def is_valid_url(url):
 
 @app.route('/urls')
 def get_urls():
-    cursor.execute('SELECT * FROM urls ORDER BY created_at DESC')
-    urls = cursor.fetchall()
+    cur.execute('SELECT * FROM urls ORDER BY created_at DESC')
+    urls = cur.fetchall()
     return render_template('urls.html', urls=urls)
 
 

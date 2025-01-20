@@ -16,6 +16,33 @@
         <li class="nav-item"><a class="nav-link " href="/urls">Сайты</a></li>
       </ul>
   </div>
-</nav>
+    </nav>
+
+    <div class="container-lg mt-3">
+      <h1>Сайты</h1>
+
+    <div class="table-responsive">
+  <table class="table table-bordered table-hover text-nowrap" data-test="urls">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Имя</th>
+          <th>Последняя проверка</th>
+          <th>Код ответа</th>
+      </tr>
+        </thead>
+        <tbody>
+        {% for url in urls %}
+        <tr data-test="url">
+          <td>{{ url[0] }}</td>
+          <td><a href="/urls/{{ url[0] }}">{{ url[1] }}</a></td>
+          <td>{{ url[3] if url[3] else 'Нет проверок' }}</td>
+          <td>{{ url[4] if url[4] else 'Не проверялся' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+  </table>
+    </div>
+    </div>
 </body>
 </html>

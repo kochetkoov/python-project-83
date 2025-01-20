@@ -14,11 +14,12 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 
-#Проверка на валидность URL адреса
+# Проверка на валидность URL адреса
 def is_valid_url(url):
     return url.startswith('http://') or url.startswith('https://')
 
-#Подключение к базе данных
+
+# Подключение к базе данных
 def get_db_connection():
     try:
         conn = psycopg2.connect(DATABASE_URL)
@@ -27,14 +28,14 @@ def get_db_connection():
     return conn
 
 
-#Отображение главной страницы
+# Отображение главной страницы
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
         url = request.form['url']
 
         if len(url) > 255 or not is_valid_url(url):
-            flash('Некорректный URL', 'error')
+            flash('Некорректный URL', 'danger')
             return redirect(url_for('home'))
 
         conn = get_db_connection()
@@ -43,8 +44,8 @@ def home():
         existing_url = cur.fetchone()
 
         if existing_url:
-            flash('Этот URL уже был добавлен')
-            return redirect('/')
+            flash('Страница уже существует', 'info')
+            return redirect('/urls')
         else:
             cur.execute('INSERT INTO urls (name) VALUES (%s)', (url,))
 
@@ -58,15 +59,16 @@ def home():
     return render_template('home.html')
 
 
-#Страница всех URL
+# Страница всех URL
 @app.route('/urls', methods=['GET', 'POST'])
 def get_urls():
     conn = get_db_connection()
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT urls.id, urls.name, urls.created_at, MAX(url_checks.created_at), MAX(url_checks.status_code)
-        FROM urls 
+        SELECT urls.id, urls.name, urls.created_at,
+        MAX(url_checks.created_at), MAX(url_checks.status_code)
+        FROM urls
         LEFT JOIN url_checks ON urls.id = url_checks.url_id
         GROUP BY urls.id
         ORDER BY urls.created_at DESC
@@ -77,7 +79,8 @@ def get_urls():
     conn.close()
     return render_template('urls.html', urls=urls)
 
-#Страница конкретного URL
+
+# Страница конкретного URL
 @app.route('/urls/<int:id>')
 def url_detail(id):
     conn = get_db_connection()
@@ -88,7 +91,11 @@ def url_detail(id):
     if url is None:
         return f'URL с {id} не найден', 404
 
-    cur.execute('SELECT id, status_code, h1, title, description, created_at FROM url_checks WHERE url_id = %s ORDER BY created_at DESC', (id,))
+    cur.execute('''SELECT id, status_code, h1, title, description, created_at
+                FROM url_checks
+                WHERE url_id = %s
+                ORDER BY id DESC
+                ''', (id,))
     checks = cur.fetchall()
 
     cur.close()
@@ -96,6 +103,7 @@ def url_detail(id):
     return render_template('url_detail.html', url=url, checks=checks)
 
 
+# Страница с проверкой URL на SEO пригодность
 @app.route('/urls/<int:id>/checks')
 def check_url(id):
     conn = get_db_connection()
@@ -105,7 +113,7 @@ def check_url(id):
     url = cur.fetchone()[0]
 
     if url is None:
-        flash('URL не найден', 'error')
+        flash('URL не найден', 'danger')
         return redirect('/urls')
 
     try:
@@ -116,21 +124,25 @@ def check_url(id):
 
         h1 = soup.find('h1').get_text() if soup.find('h1') else None
         title = soup.find('title').get_text() if soup.find('title') else None
-        description = soup.find('meta', attrs={'name': 'description'})['content'] if soup.find('meta', attrs={'name': 'description'}) else None
-
+        description = (
+                soup.find('meta', attrs={'name': 'description'})['content']
+                if soup.find('meta', attrs={'name': 'description'})
+                else None
+        )
         status_code = response.status_code
         if int(status_code) == 200:
-            cur.execute('''INSERT INTO url_checks (url_id, status_code, h1, title, description, created_at) 
-                        VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+            cur.execute('''INSERT INTO url_checks
+                        (url_id, status_code, h1,
+                        title, description, created_at)
+                        VALUES
+                        (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
                         ''', (id, status_code, h1, title, description))
             conn.commit()
             flash('Страница успешно проверена', 'success')
         else:
-            flash('Произошла ошибка при проверке', 'error')
-    except Exception as e:
+            flash('Произошла ошибка при проверке', 'danger')
+    except Exception:
         flash('Произошла ошибка при проверке', 'danger')
-
-
     finally:
         cur.close()
         conn.close()

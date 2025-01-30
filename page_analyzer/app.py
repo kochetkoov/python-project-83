@@ -45,7 +45,7 @@ def home():
 
         if existing_url:
             flash('Страница уже существует', 'info')
-            return redirect('/urls')
+            return redirect(f'/urls/{existing_url[0]}')
         else:
             cur.execute('INSERT INTO urls (name) VALUES (%s)', (url,))
 

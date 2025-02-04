@@ -41,11 +41,11 @@ def home():
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute('SELECT * FROM urls WHERE name = %s', (url,))
-        existing_url = cur.fetchone()
+        existing_url = cur.fetchone()[0]
 
         if existing_url:
             flash('Страница уже существует', 'info')
-            return redirect(f'/urls/{existing_url[0]}')
+            return redirect(f'/urls/{existing_url}')
         else:
             cur.execute('INSERT INTO urls (name) VALUES (%s)', (url,))
             conn.commit()

@@ -48,13 +48,16 @@ def home():
             return redirect(f'/urls/{existing_url[0]}')
         else:
             cur.execute('INSERT INTO urls (name) VALUES (%s)', (url,))
-
             conn.commit()
+
+            cur.execute('SELECT id FROM urls WHERE name = %s', (url,))
+            index = cur.fetchone()[0]
+
             cur.close()
             conn.close()
 
-            flash('URL успешно добавлен', 'success')
-            return redirect('/urls')
+            flash('Страница успешно добавлена', 'success')
+            return redirect(f'/urls/{index}')
 
     return render_template('home.html')
 
@@ -71,7 +74,7 @@ def get_urls():
         FROM urls
         LEFT JOIN url_checks ON urls.id = url_checks.url_id
         GROUP BY urls.id
-        ORDER BY urls.created_at DESC
+        ORDER BY urls.id DESC
     """)
     urls = cur.fetchall()
 

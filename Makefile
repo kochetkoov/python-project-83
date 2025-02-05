@@ -12,7 +12,10 @@ build:
 	./build.sh
 
 render-start:
-	source .venv/bin/activate && gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer:app
+	gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer:app
 
 lint:
 	uv run flake8
+
+check:
+	ruff check --fix --select I

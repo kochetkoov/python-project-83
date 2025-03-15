@@ -16,8 +16,8 @@ def add_url_service(url):
 
     :param url: URL для добавления.
     :return: Кортеж (id, message), где:
-             - id: ID нового URL (int) или None, если произошла ошибка.
-             - message: Сообщение об успехе или ошибке (str).
+    - id: ID нового URL (int) или None, если произошла ошибка.
+    - message: Сообщение об успехе или ошибке (str).
     """
     if not is_valid_url(url):
         return None, "Некорректный URL"
@@ -48,8 +48,8 @@ def get_url_detail_service(url_id):
 
     :param url_id: ID URL.
     :return: Кортеж (url, checks), где:
-             - url: Данные URL (tuple) или None, если URL не найден.
-             - checks: Список проверок (list) или None, если произошла ошибка.
+    - url: Данные URL (tuple) или None, если URL не найден.
+    - checks: Список проверок (list) или None, если произошла ошибка.
     """
     url = get_url_detail(url_id)
     if not url:

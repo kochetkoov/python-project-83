@@ -1,156 +1,129 @@
 import os
 
-import psycopg2
-import requests
-from bs4 import BeautifulSoup
-from dotenv import load_dotenv
 from flask import Flask, flash, redirect, render_template, request, url_for
 
-load_dotenv()
+from .valid_url import is_valid_url
+from .db import (
+    get_url_id,
+    add_url_to_db,
+    get_all_urls,
+    get_url_detail,
+    get_url_checks,
+    get_url_name,
+    add_check_url
+    )
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
-DATABASE_URL = os.getenv('DATABASE_URL')
 
-
-# Проверка на валидность URL адреса
-def is_valid_url(url):
-    return url.startswith('http://') or url.startswith('https://')
-
-
-# Подключение к базе данных
-def get_db_connection():
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-    except Exception as e:
-        print(f'Возникла ошибка: {str(e)}')
-    return conn
-
-
-# Отображение главной страницы
 @app.route('/', methods=['GET', 'POST'])
 def home():
+    """
+    Отображает главную страницу и обрабатывает добавление нового URL.
+
+    Если метод запроса GET:
+        - Отображает главную страницу (шаблон home.html).
+
+    Если метод запроса POST:
+        - Получает URL из формы.
+        - Проверяет валидность URL.
+        - Если URL невалидный, выводит сообщение об ошибке
+        и перенаправляет на главную страницу.
+        - Если URL валидный, проверяет, существует ли он в базе данных.
+        - Если URL уже существует, выводит сообщение
+        и перенаправляет на страницу этого URL.
+        - Если URL новый, добавляет его в базу данных
+        и перенаправляет на страницу нового URL.
+
+    :return:
+        - При GET: Шаблон home.html.
+        - При POST: Перенаправление на страницу URL (нового или существующего)
+        или на главную страницу в случае ошибки.
+    """
     if request.method == 'POST':
         url = request.form['url']
 
-        if len(url) > 255 or not is_valid_url(url):
+        valid_url = is_valid_url(url)
+        if not valid_url:
             flash('Некорректный URL', 'danger')
             return redirect(url_for('home'))
 
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute('SELECT * FROM urls WHERE name = %s', (url,))
-        existing_url = cur.fetchone()[0]
+        existing_url = get_url_id(url)
 
         if existing_url:
             flash('Страница уже существует', 'info')
             return redirect(f'/urls/{existing_url}')
         else:
-            cur.execute('INSERT INTO urls (name) VALUES (%s)', (url,))
-            conn.commit()
+            new_url = add_url_to_db(url)
+            if not new_url:
+                flash('Не удалось добавить страницу', 'danger')
+                return redirect(url_for('home'))
 
-            cur.execute('SELECT id FROM urls WHERE name = %s', (url,))
-            index = cur.fetchone()[0]
-
-            cur.close()
-            conn.close()
 
             flash('Страница успешно добавлена', 'success')
-            return redirect(f'/urls/{index}')
+            return redirect(f'/urls/{new_url}')
 
     return render_template('home.html')
 
 
-# Страница всех URL
 @app.route('/urls', methods=['GET', 'POST'])
 def get_urls():
-    conn = get_db_connection()
-    cur = conn.cursor()
+    """
+    Отображает страницу со списком всех URL.
 
-    cur.execute("""
-        SELECT urls.id, urls.name, urls.created_at,
-        MAX(url_checks.created_at), MAX(url_checks.status_code)
-        FROM urls
-        LEFT JOIN url_checks ON urls.id = url_checks.url_id
-        GROUP BY urls.id
-        ORDER BY urls.id DESC
-    """)
-    urls = cur.fetchall()
-
-    cur.close()
-    conn.close()
+    :return: Шаблон urls.html с данными URL или
+    перенаправление на главную страницу в случае ошибки.
+    """
+    urls = get_all_urls()
+    if not urls:
+        flash('Не получилось выполнить запрос', 'danger')
+        return redirect('/')
     return render_template('urls.html', urls=urls)
 
 
-# Страница конкретного URL
 @app.route('/urls/<int:id>')
 def url_detail(id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('SELECT * FROM urls WHERE id = %s;', (id,))
-    url = cur.fetchone()
+    """
+    Отображает страницу с деталями конкретного URL и его проверками.
 
-    if url is None:
-        return f'URL с {id} не найден', 404
-
-    cur.execute('''SELECT id, status_code, h1, title, description, created_at
-                FROM url_checks
-                WHERE url_id = %s
-                ORDER BY id DESC
-                ''', (id,))
-    checks = cur.fetchall()
-
-    cur.close()
-    conn.close()
-    return render_template('url_detail.html', url=url, checks=checks)
-
-
-# Страница с проверкой URL на SEO пригодность
-@app.route('/urls/<int:id>/checks')
-def check_url(id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute('SELECT name FROM urls WHERE id = %s', (id,))
-    url = cur.fetchone()[0]
+    :param id: ID URL для отображения.
+    :return: Шаблон url_detail.html с данными URL и проверками или сообщение об ошибке.
+    """
+    url = get_url_detail(id)
 
     if url is None:
         flash('URL не найден', 'danger')
         return redirect('/urls')
 
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
+    checks = get_url_checks(id)
+    if checks is None:
+        flash('Не удалось получить данные о проверках', 'danger')
+        return redirect('/')
+    return render_template('url_detail.html', url=url, checks=checks)
 
-        soup = BeautifulSoup(response.text, 'lxml')
 
-        h1 = soup.find('h1').get_text() if soup.find('h1') else None
-        title = soup.find('title').get_text() if soup.find('title') else None
-        description = (
-                soup.find('meta', attrs={'name': 'description'})['content']
-                if soup.find('meta', attrs={'name': 'description'})
-                else None
-        )
-        status_code = response.status_code
-        if int(status_code) == 200:
-            cur.execute('''INSERT INTO url_checks
-                        (url_id, status_code, h1,
-                        title, description, created_at)
-                        VALUES
-                        (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-                        ''', (id, status_code, h1, title, description))
-            conn.commit()
-            flash('Страница успешно проверена', 'success')
-        else:
-            flash('Произошла ошибка при проверке', 'danger')
-    except Exception:
+
+@app.route('/urls/<int:id>/checks')
+def check_url(id):
+    """
+    Проверяет URL на SEO-пригодность и добавляет проверку в базу данных.
+
+    :param id: ID URL для проверки.
+    :return: Перенаправление на страницу с деталями URL или на список URL в случае ошибки.
+    """
+    url = get_url_name(id)
+    if url is None:
+        flash('URL не найден', 'danger')
+        return redirect('/urls')
+
+    status_check = add_check_url(url, id)
+    if status_check:
+        flash('Страница успешно проверена', 'success')
+        return redirect(url_for('url_detail', id=id))
+    else:
         flash('Произошла ошибка при проверке', 'danger')
-    finally:
-        cur.close()
-        conn.close()
-
-    return redirect(url_for('url_detail', id=id))
+        return redirect('/urls')  #
 
 
 if __name__ == '__main__':

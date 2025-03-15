@@ -1,16 +1,18 @@
 import requests
 from bs4 import BeautifulSoup
 
+
 def parse_webpage(url):
     """
-    Парсит веб-страницу и извлекает данные: h1, title, description и status_code.
+    Парсит веб-страницу и извлекает данные:
+    h1, title, description и status_code.
 
     :param url: URL веб-страницы для парсинга.
     :return:
-        - h1: Заголовок h1.
-        - title: Заголовок страницы.
-        - description: Мета-описание.
-        - status_code: Код статуса HTTP.
+    - h1: Заголовок h1.
+    - title: Заголовок страницы.
+    - description: Мета-описание.
+    - status_code: Код статуса HTTP.
     """
     try:
         response = requests.get(url)

@@ -1,7 +1,7 @@
 [project]
 name = "hexlet-code"
 version = "0.1.0"
-description = "Add your description here"
+description = "Page Analyzer is a simple web application that checks the basic page-level elements of websites valuable for on-page SEO"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

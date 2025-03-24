@@ -2,6 +2,7 @@ import os
 
 import psycopg2
 from dotenv import load_dotenv
+
 from .web_parser import parse_webpage
 
 load_dotenv()

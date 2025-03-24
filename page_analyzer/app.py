@@ -1,11 +1,13 @@
 import os
+
 from flask import Flask, flash, redirect, render_template, request, url_for
+
 from .services import (
     add_url_service,
-    get_urls_service,
     get_url_detail_service,
-    perform_url_check_service
-    )
+    get_urls_service,
+    perform_url_check_service,
+)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')

@@ -1,11 +1,11 @@
 from .db import (
+    add_check_url,
     add_url_to_db,
-    get_url_id,
     get_all_urls,
-    get_url_detail,
     get_url_checks,
+    get_url_detail,
+    get_url_id,
     get_url_name,
-    add_check_url
 )
 from .valid_url import is_valid_url
 

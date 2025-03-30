@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-lg mt-3">
+      <h1>Сайт: {{ url[1] }}</h1>
+
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover text-nowrap" data-test="url">
+    <thead>
+        <tr>
+          <td>ID</td>
+            <td>{{ url[0] }}</td>
+        </tr>
+        <tr>
+          <td>Имя</td>
+            <td>{{ url[1] }}</td>
+        </tr>
+        <tr>
+          <td>Дата создания</td>
+            <td>{{ url[2] }}</td>
+        </tr>
+      </thead>
+    </table>
+  </div>
+
+    <form>
+    <h2 class="mt-5 mb-3">Проверки</h2>
+    <a href="/urls/{{ url[0] }}/checks" class="btn btn-primary">Запустить проверку</a>
+    </form>
+
+
+  <div>
+    <table class="table" data-test="checks">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Код ответа</th>
+        <th>h1</th>
+        <th>title</th>
+        <th>description</th>
+        <th>Дата создания</th>
+      </tr>
+    </thead>
+      {% for check in checks %}
+       <tbody>
+        <td>{{ check[0] }}</td>
+        <td>{{ check[1] }}</td>
+        <td>{{ check[2] }}</td>
+       <td>{{ check[3] if check[3] else 'Не найден' }}</td>
+       <td>{{ check[4] if check[4] else 'Не найден' }}</td>
+       <td>{{ check[5] if check[5] else 'Не найден' }}</td>
+    </tbody>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

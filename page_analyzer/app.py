@@ -1,89 +1,120 @@
 import os
+from urllib.parse import urlparse
 
-from flask import Flask, flash, redirect, render_template, request, url_for
-
-from .services import (
-    add_url_service,
-    get_url_detail_service,
-    get_urls_service,
-    perform_url_check_service,
+from dotenv import load_dotenv
+from flask import (
+    Flask,
+    flash,
+    get_flashed_messages,
+    redirect,
+    render_template,
+    request,
+    url_for,
 )
+
+from page_analyzer.db import (
+    add_check_to_db,
+    add_url_to_db,
+    get_checks_desc,
+    get_url_by_id,
+    get_url_by_name,
+    get_urls_with_latest_check,
+)
+from page_analyzer.helpers import fetch_url_data
+from page_analyzer.tasks import async_check_all_urls
+from page_analyzer.url_validator import validate
+
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    """
-    Обрабатывает главную страницу и добавление нового URL.
-
-    :return: Шаблон home.html или перенаправление на страницу URL.
-    """
-    if request.method == 'POST':
-        url = request.form['url']
-        url_id, message = add_url_service(url)
-
-        if not url_id:
-            flash(message, 'danger')
-            return redirect(url_for('home'))
-
-        flash(message, 'success')
-        return redirect(f'/urls/{url_id}')
-
-    return render_template('home.html')
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
 
 
-@app.route('/urls', methods=['GET', 'POST'])
-def get_urls():
-    """
-    Отображает список всех URL.
-
-    :return: Шаблон urls.html или перенаправление на главную страницу.
-    """
-    urls = get_urls_service()
-    if not urls:
-        flash('Не получилось выполнить запрос', 'danger')
-        return redirect('/')
-    return render_template('urls.html', urls=urls)
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
 
 
-@app.route('/urls/<int:id>')
-def url_detail(id):
-    """
-    Отображает детали URL и его проверки.
+@app.get('/')
+def page_analyzer():
+    message = get_flashed_messages(with_categories=True)
 
-    :param id: ID URL.
-    :return: Шаблон url_detail.html или перенаправление на список URL.
-    """
-    url, checks = get_url_detail_service(id)
+    return render_template('index.html', message=message)
 
+
+@app.post('/urls')
+def add_url():
+    new_url = request.form.get('url')
+
+    error = validate(new_url)
+    if error:
+        flash(f'{error}', 'danger')
+        message = get_flashed_messages(with_categories=True)
+        return render_template('index.html', message=message), 422
+
+    parsed_url = urlparse(new_url)
+    normal_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+
+    url_data = get_url_by_name(normal_url)
+    if url_data:
+        flash('Страница уже существует', 'primary')
+        return redirect(url_for('show_url', id=url_data.id))
+
+    add_url_to_db(normal_url)
+    new_url_data = get_url_by_name(normal_url)
+
+    flash('Страница успешно добавлена', 'success')
+    return redirect(url_for('show_url', id=new_url_data.id))
+
+
+@app.get('/urls')
+def show_all_urls():
+    all_urls = get_urls_with_latest_check()
+    message = get_flashed_messages(with_categories=True)
+    return render_template('urls.html', all_urls=all_urls, message=message)
+
+
+@app.post('/urls/checks')
+def check_all_urls():
+    async_check_all_urls.delay()
+    flash('Процесс проверки всех страниц запушен', 'success')
+
+    return redirect(url_for('show_all_urls'))
+
+
+@app.get('/urls/<int:id>')
+def show_url(id):
+    url_data = get_url_by_id(id)
+    if not url_data:
+        return render_template('404.html'), 404
+
+    all_checks = get_checks_desc(id)
+    message = get_flashed_messages(with_categories=True)
+    return render_template(
+        'url.html',
+        url_data=url_data,
+        all_checks=all_checks,
+        message=message
+    )
+
+
+@app.post('/urls/<id>/checks')
+def add_check(id):
+    url = get_url_by_id(id)
     if not url:
-        flash('URL не найден', 'danger')
-        return redirect('/urls')
+        return render_template('404.html'), 404
 
-    if checks is None:
-        flash('Не удалось получить данные о проверках', 'danger')
-        return redirect('/')
+    status_code, page_data = fetch_url_data(url[0].name)
 
-    return render_template('url_detail.html', url=url, checks=checks)
-
-
-@app.route('/urls/<int:id>/checks')
-def check_url(id):
-    """
-    Выполняет проверку URL.
-
-    :param id: ID URL.
-    :return: Перенаправление на страницу URL.
-    """
-    if perform_url_check_service(id):
-        flash('Страница успешно проверена', 'success')
-    else:
+    if status_code == 0:
         flash('Произошла ошибка при проверке', 'danger')
+    else:
+        add_check_to_db(id, status_code, page_data)
+        flash('Страница успешно проверена', 'success')
 
-    return redirect(url_for('url_detail', id=id))
-
-
-if __name__ == '__main__':
-    app.run()
+    return redirect(url_for('show_url', id=id))

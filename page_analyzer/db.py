@@ -16,7 +16,8 @@ def get_db_connection():
     :return: Объект соединения с базой данных.
     :rtype: psycopg2.extensions.connection
     """
-    return psycopg2.connect(DATABASE_URL)
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    return conn
 
 
 def add_url_to_db(url):

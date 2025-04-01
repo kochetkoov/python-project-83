@@ -9,6 +9,7 @@ load_dotenv()
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 
+
 def get_db_connection():
     """
     Устанавливает и возвращает соединение с базой данных.
@@ -32,7 +33,10 @@ def add_url_to_db(url):
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute('''INSERT INTO urls (name) VALUES (%s) RETURNING id''', (url,))
+                cur.execute('''
+                    INSERT INTO urls (name) VALUES (%s) RETURNING id''',
+                            (url,)
+                            )
                 new_url_id = cur.fetchone()[0]
                 conn.commit()
                 return new_url_id

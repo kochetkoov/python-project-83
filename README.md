@@ -13,7 +13,7 @@ git clone git@github.com:kochetkoov/python-project-83.git
 cd page-analyzer
 ```
 
-Install dependencies using UV.
+Install dependencies using Poetry.
 ```
 make install
 ```

@@ -21,15 +21,15 @@ def home():
     :return: Шаблон home.html или перенаправление на страницу URL.
     """
     if request.method == 'POST':
-        url = request.form['url']
+        url = request.form.get('url', '').strip()
         url_id, message = add_url_service(url)
 
         if not url_id:
             flash(message, 'danger')
-            return redirect(url_for('home'))
+            return render_template('home.html', url=url), 422
 
         flash(message, 'success')
-        return redirect(f'/urls/{url_id}')
+        return redirect(url_for('url_detail', id=url_id))
 
     return render_template('home.html')
 

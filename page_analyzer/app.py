@@ -33,7 +33,7 @@ def home():
         existing_url = get_url_id(normalized_url)
         if existing_url:
             flash('Страница уже существует', 'info')
-            return redirect(url_for('url_detail', id=existing_url))
+            return render_template('home.html')  # Не редиректим, а остаёмся на той же странице
 
         new_url_id = add_url_to_db(normalized_url)
         if not new_url_id:
@@ -41,7 +41,7 @@ def home():
             return render_template('home.html', url=url), 500
 
         flash('Страница успешно добавлена', 'success')
-        return redirect(url_for('url_detail', id=new_url_id))
+        return render_template('home.html')  # Остаёмся на той же странице
 
     return render_template('home.html')
 

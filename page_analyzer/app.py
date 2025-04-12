@@ -1,13 +1,15 @@
 import os
+from urllib.parse import urlparse
 
 from flask import Flask, flash, redirect, render_template, request, url_for
 
+from .db import add_url_to_db, get_url_id
 from .services import (
-    add_url_service,
     get_url_detail_service,
     get_urls_service,
     perform_url_check_service,
 )
+from .valid_url import is_valid_url
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
@@ -15,21 +17,32 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
-    """
-    Обрабатывает главную страницу и добавление нового URL.
-
-    :return: Шаблон home.html или перенаправление на страницу URL.
-    """
     if request.method == 'POST':
         url = request.form.get('url', '').strip()
-        url_id, message = add_url_service(url)
 
-        if not url_id:
-            flash(message, 'danger')
+        # Validation
+        if not is_valid_url(url):
+            flash('Некорректный URL', 'danger')
             return render_template('home.html', url=url), 422
 
-        flash(message, 'success')
-        return redirect(url_for('url_detail', id=url_id))
+        # Normalization
+        parsed_url = urlparse(url)
+        normalized_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+
+        # Check if exists
+        existing_url = get_url_id(normalized_url)
+        if existing_url:
+            flash('Страница уже существует', 'info')
+            return redirect(url_for('url_detail', id=existing_url))
+
+        # Add to DB
+        new_url_id = add_url_to_db(normalized_url)
+        if not new_url_id:
+            flash('Не удалось добавить страницу', 'danger')
+            return render_template('home.html', url=url), 500
+
+        flash('Страница успешно добавлена', 'success')
+        return redirect(url_for('url_detail', id=new_url_id))
 
     return render_template('home.html')
 

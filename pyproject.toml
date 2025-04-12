@@ -1,24 +1,24 @@
-[project]
+[tool.poetry]
 name = "hexlet-code"
 version = "0.1.0"
-description = "Page Analyzer is a simple web application that checks the basic page-level elements of websites valuable for on-page SEO"
+description = ""
+authors = ["Алексей <kochetkoov.ao@mail.ru>"]
 readme = "README.md"
-requires-python = ">=3.12"
-dependencies = [
-    "beautifulsoup4>=4.12.3",
-    "flask>=3.1.0",
-    "gunicorn>=23.0.0",
-    "lxml>=5.3.0",
-    "psycopg2-binary>=2.9.10",
-    "pytest>=8.3.5",
-    "pytest-mock>=3.14.0",
-    "python-dotenv>=1.0.1",
-    "requests>=2.32.3",
-    "ruff>=0.9.4",
-    "validators>=0.34.0",
-]
 
-[project.optional-dependencies]
-dev = [
-    "flake8>=7.0.0",
-]
+[tool.poetry.dependencies]
+python = "^3.12"
+beautifulsoup4 = "^4.13.3"
+flask = "^3.1.0"
+gunicorn = "^23.0.0"
+lxml = "^5.3.2"
+psycopg2-binary = "^2.9.10"
+validators = "^0.34.0"
+ruff = "^0.11.5"
+requests = "^2.32.3"
+python-dotenv = "^1.1.0"
+flake8 = "^7.2.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

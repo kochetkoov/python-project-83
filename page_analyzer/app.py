@@ -1,7 +1,14 @@
 import os
 from urllib.parse import urlparse
 
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import (
+    Flask,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+    get_flashed_messages)
 
 from .db import add_url_to_db, get_url_id
 from .services import (
@@ -23,7 +30,8 @@ def home():
         # Validation
         if not is_valid_url(url):
             flash('Некорректный URL', 'danger')
-            return render_template('home.html', url=url), 422
+            message = get_flashed_messages(with_categories=True)
+            return render_template('home.html', url=url, message=message), 422
 
         # Normalization
         parsed_url = urlparse(url)
@@ -33,16 +41,21 @@ def home():
         existing_url = get_url_id(normalized_url)
         if existing_url:
             flash('Страница уже существует', 'info')
-            return redirect(url_for('url_detail', id=existing_url))
+            message = get_flashed_messages(with_categories=True)
+            return redirect(url_for('url_detail',
+                                    id=existing_url,
+                                    message=message))
 
         # Add to DB
         new_url_id = add_url_to_db(normalized_url)
         if not new_url_id:
             flash('Не удалось добавить страницу', 'danger')
-            return render_template('home.html', url=url), 500
+            message = get_flashed_messages(with_categories=True)
+            return render_template('home.html', url=url, message=message), 500
 
         flash('Страница успешно добавлена', 'success')
-        return redirect(url_for('url_detail', id=new_url_id))
+        message = get_flashed_messages(with_categories=True)
+        return redirect(url_for('url_detail', id=new_url_id, message=message))
 
     return render_template('home.html')
 
@@ -57,7 +70,8 @@ def get_urls():
     urls = get_urls_service()
     if not urls:
         flash('Не получилось выполнить запрос', 'danger')
-        return redirect('/')
+        message = get_flashed_messages(with_categories=True)
+        return render_template('home.html', message=message)
     return render_template('urls.html', urls=urls)
 
 
@@ -73,11 +87,12 @@ def url_detail(id):
 
     if not url:
         flash('URL не найден', 'danger')
-        return redirect('/urls')
+        message = get_flashed_messages(with_categories=True)
+        return render_template('urls.html', message=message)
 
     if checks is None:
         flash('Не удалось получить данные о проверках', 'danger')
-        return redirect('/')
+        return render_template('home.html', message=message)
 
     return render_template('url_detail.html', url=url, checks=checks)
 
@@ -92,10 +107,12 @@ def check_url(id):
     """
     if perform_url_check_service(id):
         flash('Страница успешно проверена', 'success')
+        message = get_flashed_messages(with_categories=True)
     else:
         flash('Произошла ошибка при проверке', 'danger')
+        message = get_flashed_messages(with_categories=True)
 
-    return redirect(url_for('url_detail', id=id))
+    return redirect(url_for('url_detail', id=id, message=message))
 
 
 if __name__ == '__main__':

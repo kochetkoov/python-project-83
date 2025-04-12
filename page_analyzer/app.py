@@ -1,7 +1,8 @@
 import os
 from urllib.parse import urlparse
 
-from flask import (Flask, flash, redirect, render_template, request, url_for)
+from dotenv import load_dotenv
+from flask import Flask, flash, redirect, render_template, request, url_for
 
 from .db import add_url_to_db, get_url_id
 from .services import (
@@ -10,6 +11,8 @@ from .services import (
     perform_url_check_service,
 )
 from .valid_url import is_valid_url
+
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
@@ -20,22 +23,18 @@ def home():
     if request.method == 'POST':
         url = request.form.get('url', '').strip()
 
-        # Validation
         if not is_valid_url(url):
             flash('Некорректный URL', 'danger')
             return render_template('home.html', url=url), 422
 
-        # Normalization
         parsed_url = urlparse(url)
         normalized_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
 
-        # Check if exists
         existing_url = get_url_id(normalized_url)
         if existing_url:
             flash('Страница уже существует', 'info')
             return redirect(url_for('url_detail', id=existing_url))
 
-        # Add to DB
         new_url_id = add_url_to_db(normalized_url)
         if not new_url_id:
             flash('Не удалось добавить страницу', 'danger')

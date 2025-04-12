@@ -15,7 +15,7 @@ def parse_webpage(url):
     - status_code: Код статуса HTTP.
     """
     try:
-        response = requests.get(url, timeout=5)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()
 
         soup = BeautifulSoup(response.text, 'html.parser')

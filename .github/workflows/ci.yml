@@ -22,7 +22,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install uv
+          pip install poetry
           make install
 
       - name: Run linter and pytest

@@ -1,36 +1,10 @@
 from .db import (
     add_check_url,
-    add_url_to_db,
     get_all_urls,
     get_url_checks,
     get_url_detail,
-    get_url_id,
     get_url_name,
 )
-from .valid_url import is_valid_url
-
-
-def add_url_service(url):
-    """
-    Добавляет URL в базу данных.
-
-    :param url: URL для добавления.
-    :return: Кортеж (id, message), где:
-    - id: ID нового URL (int) или None, если произошла ошибка.
-    - message: Сообщение об успехе или ошибке (str).
-    """
-    if not is_valid_url(url):
-        return None, "Некорректный URL"
-
-    existing_url = get_url_id(url)
-    if existing_url:
-        return existing_url, "Страница уже существует"
-
-    new_url_id = add_url_to_db(url)
-    if not new_url_id:
-        return None, "Не удалось добавить страницу"
-
-    return new_url_id, "Страница успешно добавлена"
 
 
 def get_urls_service():

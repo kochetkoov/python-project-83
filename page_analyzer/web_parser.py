@@ -15,17 +15,17 @@ def parse_webpage(url):
     - status_code: Код статуса HTTP.
     """
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()
 
-        soup = BeautifulSoup(response.text, 'lxml')
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-        h1 = soup.find('h1').get_text() if soup.find('h1') else None
-        title = soup.find('title').get_text() if soup.find('title') else None
+        h1 = soup.find('h1').get_text() if soup.find('h1') else ''
+        title = soup.find('title').get_text() if soup.find('title') else ''
         description = (
             soup.find('meta', attrs={'name': 'description'})['content']
             if soup.find('meta', attrs={'name': 'description'})
-            else None
+            else ''
         )
         status_code = response.status_code
         return h1, title, description, status_code

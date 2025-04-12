@@ -13,7 +13,7 @@ git clone git@github.com:kochetkoov/python-project-83.git
 cd page-analyzer
 ```
 
-Install dependencies using UV.
+Install dependencies using Poetry.
 ```
 make install
 ```
@@ -39,4 +39,4 @@ make dev
 ```
 
 ### Demonstration of a project
-You can try out Page Analyzer by clicking here. (с деплоем пока проблемы)
+You can try out Page Analyzer by clicking here. [click](https://python-project-83-b0x2.onrender.com/)

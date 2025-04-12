@@ -20,12 +20,9 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install UV
-        run: |
-          pip install uv
-
       - name: Install dependencies
         run: |
+          pip install poetry
           make install
 
       - name: Run linter and pytest

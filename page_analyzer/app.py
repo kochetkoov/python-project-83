@@ -23,41 +23,32 @@ def home():
     return render_template('home.html')
 
 
-@app.post('/urls')
+@app.route('/urls', methods=['POST', 'GET'] )
 def add_url():
-    url = request.form.get('url')
+    if request.method == 'POST':
+        url = request.form.get('url')
 
-    error = is_valid_url(url)
-    if error:
-        flash(f'{error}', 'danger')
-        return render_template('home.html', url=url), 422
+        error = is_valid_url(url)
+        if error:
+            flash(f'{error}', 'danger')
+            return render_template('home.html', url=url), 422
 
-    parsed_url = urlparse(url)
-    normalized_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+        parsed_url = urlparse(url)
+        normalized_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
 
-    existing_url = get_url_id(normalized_url)
-    if existing_url:
-        flash('Страница уже существует', 'info')
-        return redirect(url_for('url_detail', id=existing_url))
+        existing_url = get_url_id(normalized_url)
+        if existing_url:
+            flash('Страница уже существует', 'info')
+            return redirect(url_for('url_detail', id=existing_url))
 
-    new_url_id = add_url_to_db(normalized_url)
-    if not new_url_id:
-        flash('Не удалось добавить страницу', 'danger')
-        return render_template('home.html', url=url), 500
+        new_url_id = add_url_to_db(normalized_url)
+        if not new_url_id:
+            flash('Не удалось добавить страницу', 'danger')
+            return render_template('home.html', url=url), 500
+        else:
+            flash('Страница успешно добавлена', 'success')
+            return redirect(url_for('url_detail', id=new_url_id))
 
-        flash('Страница успешно добавлена', 'success')
-        return redirect(url_for('url_detail', id=new_url_id))
-
-    return render_template('home.html')
-
-
-@app.get('/urls')
-def get_urls():
-    """
-    Отображает список всех URL.
-
-    :return: Шаблон urls.html или перенаправление на главную страницу.
-    """
     urls = get_urls_service()
     if not urls:
         flash('Не получилось выполнить запрос', 'danger')

@@ -23,8 +23,9 @@ def home():
     if request.method == 'POST':
         url = request.form.get('url')
 
-        if not is_valid_url(url):
-            flash('Некорректный URL', 'danger')
+        error = is_valid_url(url)
+        if error:
+            flash(f'{error}', 'danger')
             return render_template('home.html', url=url), 422
 
         parsed_url = urlparse(url)

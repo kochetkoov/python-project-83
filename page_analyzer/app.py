@@ -21,7 +21,7 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        url = request.form.get('url', '').strip()
+        url = request.form.get('url')
 
         if not is_valid_url(url):
             flash('Некорректный URL', 'danger')

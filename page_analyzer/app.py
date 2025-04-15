@@ -26,7 +26,7 @@ def home():
         error = is_valid_url(url)
         if error:
             flash(f'{error}', 'danger')
-            return render_template('home.html', url=url), 422
+            return redirect('/urls')
 
         parsed_url = urlparse(url)
         normalized_url = f"{parsed_url.scheme}://{parsed_url.netloc}"

@@ -23,7 +23,7 @@ def home():
     return render_template('home.html')
 
 
-@app.route('/urls', methods=['POST', 'GET'] )
+@app.route('/urls', methods=['POST', 'GET'])
 def add_url():
     if request.method == 'POST':
         url = request.form.get('url')

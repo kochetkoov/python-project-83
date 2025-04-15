@@ -18,27 +18,32 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.get('/')
 def home():
-    if request.method == 'POST':
-        url = request.form.get('url')
+    return render_template('home.html')
 
-        error = is_valid_url(url)
-        if error:
-            flash(f'{error}', 'danger')
-            return render_template('home.html', url=url), 422
-        parsed_url = urlparse(url)
-        normalized_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
 
-        existing_url = get_url_id(normalized_url)
-        if existing_url:
-            flash('Страница уже существует', 'info')
-            return redirect(url_for('url_detail', id=existing_url))
+@app.post('/urls')
+def add_url():
+    url = request.form.get('url')
 
-        new_url_id = add_url_to_db(normalized_url)
-        if not new_url_id:
-            flash('Не удалось добавить страницу', 'danger')
-            return render_template('home.html', url=url), 500
+    error = is_valid_url(url)
+    if error:
+        flash(f'{error}', 'danger')
+        return render_template('home.html', url=url), 422
+
+    parsed_url = urlparse(url)
+    normalized_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+
+    existing_url = get_url_id(normalized_url)
+    if existing_url:
+        flash('Страница уже существует', 'info')
+        return redirect(url_for('url_detail', id=existing_url))
+
+    new_url_id = add_url_to_db(normalized_url)
+    if not new_url_id:
+        flash('Не удалось добавить страницу', 'danger')
+        return render_template('home.html', url=url), 500
 
         flash('Страница успешно добавлена', 'success')
         return redirect(url_for('url_detail', id=new_url_id))
@@ -46,7 +51,7 @@ def home():
     return render_template('home.html')
 
 
-@app.route('/urls', methods=['GET'])
+@app.get('/urls')
 def get_urls():
     """
     Отображает список всех URL.
